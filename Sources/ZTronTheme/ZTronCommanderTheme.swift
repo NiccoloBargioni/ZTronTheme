@@ -7,6 +7,8 @@ public struct ZTronCommanderTheme: ZTronTheme {
     public typealias C = Self.Color
     public typealias F = Self.Font
     
+    public init() {  }
+    
     public struct Color: ZTronColor {
         public let brand = "brand"
         public let label = "global.background.inverted"
