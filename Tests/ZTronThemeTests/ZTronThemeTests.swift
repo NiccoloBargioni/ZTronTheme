@@ -1,12 +1,13 @@
 import XCTest
 @testable import ZTronTheme
+import SwiftUI
 
 final class ZTronThemeTests: XCTestCase {
     func testExample() throws {
-        // XCTest Documentation
-        // https://developer.apple.com/documentation/xctest
-
-        // Defining Test Cases and Test Methods
-        // https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
+        let colors = ZTronCommanderTheme.Color()
+        let someColor = Color(colors, value: \.brand)
+        
+        let font = ZTronCommanderTheme.Font()
+        let someFont = Text("Bella zio").font(ztron: font, font: \.callout, weight: .black)
     }
 }
