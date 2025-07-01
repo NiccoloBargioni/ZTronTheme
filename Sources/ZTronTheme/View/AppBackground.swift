@@ -14,7 +14,7 @@ public struct AppBackground: View {
                 LinearGradient(
                     colors: [
                         self.colorScheme == .light ?
-                        Color.fromHex("#F5F5F5") : Color.fromHex("#0b0b0b"),
+                        Color.fromHex("#EAE9F9") : Color.fromHex("#0b0b0b"),
                         Color(self.themeProvider.getTheme(), value: \.appBackground)
                     ],
                     startPoint: .top,
