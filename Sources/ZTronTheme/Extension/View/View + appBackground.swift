@@ -14,6 +14,12 @@ public extension View {
             AppBackground(theme: theme.erasedToAnyTheme())
         }
     }
+    
+    func gradientAppBackground() -> some View {
+        return self.background {
+            AppBackground()
+        }
+    }
 }
 
 
