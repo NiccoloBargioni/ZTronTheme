@@ -9,9 +9,9 @@ public extension View {
         self.modifier(AppBackgroundViewModifier(value: \.appBackground))
     }
     
-    func gradientAppBackground() -> some View {
+    func gradientAppBackground<T: ZTronTheme>(theme: T = ZTronThemeProvider.default().erasedToAnyTheme()) -> some View {
         return self.background {
-            AppBackground()
+            AppBackground(theme: theme.erasedToAnyTheme())
         }
     }
 }
@@ -27,7 +27,7 @@ fileprivate struct AppBackgroundViewModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         return content.background {
-            Color(themeProvider.getTheme().colorSet, value: self.value)
+            Color(source: self.themeProvider, value: self.value)
         }
     }
 }

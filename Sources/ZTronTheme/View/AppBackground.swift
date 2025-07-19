@@ -3,8 +3,19 @@ import SwiftUI
 public struct AppBackground: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var themeProvider: ZTronThemeProvider
+    private var injectedAppTheme: AnyZTronTheme? = nil
     
-    public init() {  }
+    public init(theme: AnyZTronTheme? = nil) {
+        self.injectedAppTheme = theme
+    }
+    
+    private var theme: AnyZTronTheme {
+        if let injectedAppTheme = self.injectedAppTheme {
+            return injectedAppTheme
+        } else {
+            return self.themeProvider.getTheme()
+        }
+    }
     
     public var body: some View {
         GeometryReader { geo in
@@ -15,7 +26,7 @@ public struct AppBackground: View {
                     colors: [
                         self.colorScheme == .light ?
                         Color.fromHex("#EAE9F9") : Color.fromHex("#0b0b0b"),
-                        Color(self.themeProvider.getTheme(), value: \.appBackground)
+                        Color(self.theme, value: \.appBackground)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -25,11 +36,11 @@ public struct AppBackground: View {
                 RadialGradient(
                     stops: [
                         Gradient.Stop(
-                            color: Color(self.themeProvider.getTheme(), value: \.appBackground),
+                            color: Color(self.theme, value: \.appBackground),
                             location: 0
                         ),
                         Gradient.Stop(
-                            color: Color(self.themeProvider.getTheme(), value: \.appBackground).opacity(0),
+                            color: Color(self.theme, value: \.appBackground).opacity(0),
                             location: 1
                         )
                     ],
