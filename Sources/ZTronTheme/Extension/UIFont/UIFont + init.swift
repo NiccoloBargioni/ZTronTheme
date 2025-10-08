@@ -16,6 +16,21 @@ public extension UIFont {
         return  source.getTheme().fontSet[keyPath: font].withWeight(weight)
     }
     
+    static func from<T: ZTronTheme>(
+        ztron: T,
+        font: KeyPath<T.F, UIFont>,
+        weight: UIFont.Weight
+    ) -> UIFont {
+        return ztron.fontSet[keyPath: font].withWeight(weight)
+    }
+    
+    static func from<T: ZTronTheme>(
+        ztron: T,
+        font: KeyPath<T.F, UIFont>,
+    ) -> UIFont {
+        return ztron.fontSet[keyPath: font]
+    }
+        
     private func withWeight(_ weight: UIFont.Weight) -> UIFont {
             var attributes = fontDescriptor.fontAttributes
             var traits = (attributes[.traits] as? [UIFontDescriptor.TraitKey: Any]) ?? [:]
