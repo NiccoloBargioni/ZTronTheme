@@ -26,7 +26,7 @@ public extension UIFont {
     
     static func from<T: ZTronTheme>(
         ztron: T,
-        font: KeyPath<T.F, UIFont>,
+        font: KeyPath<T.F, UIFont>
     ) -> UIFont {
         return ztron.fontSet[keyPath: font]
     }
