@@ -16,6 +16,8 @@ public struct ZTronCommanderTheme: ZTronTheme {
         public let appBackground = "global.background"
         public let appBackgroundDark = "global.background.dark"
         public let appBackgroundLight = "gradient.background"
+        public let appBackgroundVoid = "global.background.void"
+        public let appBackgroundLavender = "global.background.lavender"
         public let visitedMaterial = "visited.material"
         public let sunsetSky = "sunset.sky"
         public let disabled = "disabled"

@@ -7,6 +7,8 @@ public protocol ZTronColor: Sendable {
     var appBackground: String { get }
     var appBackgroundDark: String { get }
     var appBackgroundLight: String { get }
+    var appBackgroundVoid: String { get }
+    var appBackgroundLavender: String { get }
     var visitedMaterial: String { get }
     var sunsetSky: String { get }
     var disabled: String { get }
@@ -26,6 +28,8 @@ public struct AnyZTronColor : ZTronColor {
     public var appBackground: String { return base.appBackground }
     public var appBackgroundDark: String { return base.appBackgroundDark }
     public var appBackgroundLight: String { return base.appBackgroundLight }
+    public var appBackgroundVoid: String { return base.appBackgroundVoid }
+    public var appBackgroundLavender: String { return base.appBackgroundLavender }
     public var visitedMaterial: String { return base.visitedMaterial }
     public var sunsetSky: String { return base.sunsetSky }
     public var disabled: String { return base.disabled }

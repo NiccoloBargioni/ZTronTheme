@@ -12,12 +12,14 @@ public extension View {
     func gradientAppBackground<T: ZTronTheme>(theme: T = ZTronThemeProvider.default().erasedToAnyTheme()) -> some View {
         return self.background {
             AppBackground(theme: theme.erasedToAnyTheme())
+                .ignoresSafeArea()
         }
     }
-    
+
     func gradientAppBackground() -> some View {
         return self.background {
             AppBackground()
+                .ignoresSafeArea()
         }
     }
 }
