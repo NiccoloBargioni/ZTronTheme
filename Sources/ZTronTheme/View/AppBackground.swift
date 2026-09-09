@@ -73,16 +73,26 @@ public struct AppBackground: View {
 
     /// Elliptical magenta glow aligned to the top edge of a bottom-anchored rect.
     /// `glowIntensity` scales the ellipse radii from 0 (invisible) to 1 (full Figma spec).
+    ///
+    /// In Figma only the dark page has this layer, and there it also carries a 10 %
+    /// `appBackgroundVoid` wash over everything outside the ellipse. The light page has
+    /// no such layer, so in light mode the ellipse fades to transparent and there is
+    /// no wash — at intensity 0 nothing is drawn, matching Figma.
     private func glow(in size: CGSize) -> some View {
         let intensity = max(0, min(1, glowIntensity))
         let height = max(size.height * (1 - glowTopInset), 0)
         let rx = size.width * glowRadiusX * intensity
         let ry = height * glowRadiusY * intensity
 
+        let brand = Color(theme, value: \.brand)
+        let wash: Color? = colorScheme == .dark ? Color(theme, value: \.appBackgroundVoid) : nil
+
         return ZStack {
-            Color(theme, value: \.appBackgroundVoid)
+            if let wash = wash {
+                wash
+            }
             EllipticalGradient(
-                colors: [Color(theme, value: \.brand), Color(theme, value: \.appBackgroundVoid)],
+                colors: [brand, wash ?? brand.opacity(0)],
                 center: .center,
                 startRadiusFraction: 0,
                 endRadiusFraction: 0.5
