@@ -5,6 +5,7 @@ public extension Text {
         return self.font(ztron[keyPath: font])
     }
     
+    @MainActor
     func font(source: ZTronThemeProvider, font: KeyPath<AnyZTronFont, SwiftUI.Font>) -> Text {
         return self.font(source.getTheme().fontSet[keyPath: font])
     }
@@ -13,6 +14,7 @@ public extension Text {
         return self.font(ztron[keyPath: font].weight(weight))
     }
     
+    @MainActor
     func font(source: ZTronThemeProvider, font: KeyPath<AnyZTronFont, SwiftUI.Font>, weight: Font.Weight) -> Text {
         return self.font(source.getTheme().fontSet[keyPath: font].weight(weight))
     }

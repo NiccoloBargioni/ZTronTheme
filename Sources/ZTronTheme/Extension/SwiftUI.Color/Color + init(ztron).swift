@@ -9,6 +9,7 @@ public extension Color {
         self.init(ztron.colorSet[keyPath: value], bundle: .module)
     }
     
+    @MainActor
     init(source: ZTronThemeProvider, value: KeyPath<AnyZTronColor, String>) {
         self.init(source.getTheme().colorSet[keyPath: value], bundle: .module)
     }

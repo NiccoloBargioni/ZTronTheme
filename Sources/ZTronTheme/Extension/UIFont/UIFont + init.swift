@@ -1,13 +1,15 @@
 import UIKit
 
 public extension UIFont {
+    @MainActor
     static func from(
         source: ZTronThemeProvider,
         font: KeyPath<AnyZTronFont, UIFont>
     ) -> UIFont {
         return  source.getTheme().fontSet[keyPath: font]
     }
-    
+
+    @MainActor
     static func from(
         source: ZTronThemeProvider,
         font: KeyPath<AnyZTronFont, UIFont>,

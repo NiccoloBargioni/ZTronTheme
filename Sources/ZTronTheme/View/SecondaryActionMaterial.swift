@@ -3,16 +3,23 @@ import SwiftUI
 public struct SecondaryActionMaterial: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var themeProvider: ZTronThemeProvider
-    
-    public init() { }
-    
+    private var injectedAppTheme: AnyZTronTheme? = nil
+
+    public init(theme: AnyZTronTheme? = nil) {
+        self.injectedAppTheme = theme
+    }
+
+    private var theme: AnyZTronTheme {
+        self.injectedAppTheme ?? self.themeProvider.getTheme()
+    }
+
     public var body: some View {
         ZStack {
             if colorScheme == .dark {
-                Color(self.themeProvider.getTheme(), value: \.visitedMaterial)
-                Color(self.themeProvider.getTheme(), value: \.appBackground).opacity(0.9)
+                Color(self.theme, value: \.visitedMaterial)
+                Color(self.theme, value: \.appBackground).opacity(0.9)
             } else {
-                Color(self.themeProvider.getTheme(), value: \.appBackgroundDark)
+                Color(self.theme, value: \.appBackgroundDark)
             }
         }
     }
@@ -20,5 +27,5 @@ public struct SecondaryActionMaterial: View {
 
 
 #Preview {
-    SecondaryActionMaterial()
+    SecondaryActionMaterial(theme: ZTronCommanderTheme().erasedToAnyTheme())
 }

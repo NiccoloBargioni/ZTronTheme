@@ -3,18 +3,24 @@ import SwiftUI
 
 public struct Glare: View {
     internal var isAlwaysDark: Bool = false
-    @EnvironmentObject private var themeProver: ZTronThemeProvider
-    
-    public init(isAlwaysDark: Bool = false) {
+    @EnvironmentObject private var themeProvider: ZTronThemeProvider
+    private var injectedAppTheme: AnyZTronTheme? = nil
+
+    public init(isAlwaysDark: Bool = false, theme: AnyZTronTheme? = nil) {
         self.isAlwaysDark = isAlwaysDark
+        self.injectedAppTheme = theme
+    }
+
+    private var theme: AnyZTronTheme {
+        self.injectedAppTheme ?? self.themeProvider.getTheme()
     }
 
     public var body: some View {
         GeometryReader { geo in
             RadialGradient(
                 colors: [
-                    Color(self.themeProver.getTheme(), value: \.brand),
-                    Color(self.themeProver.getTheme(), value:
+                    Color(self.theme, value: \.brand),
+                    Color(self.theme, value:
                             self.isAlwaysDark ? \.appBackground : \.appBackgroundDark
                     )
                     .opacity(0)
