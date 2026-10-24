@@ -2,43 +2,22 @@ import SwiftUI
 
 public struct SheetBackground {
     @Environment(\.colorScheme) private var colorScheme
-    @EnvironmentObject private var themeProvider: ZTronThemeProvider
-    private var injectedAppTheme: AnyZTronTheme? = nil
+    private let injectedAppTheme: AnyZTronTheme?
 
     private let baseEnd    = UnitPoint(x: 0.50, y: 0.31)
     private let glowCenter = UnitPoint(x: 0.50, y: 0.47)
     private let glowOpacity: Double = 0.10
 
+    /// Nonisolated: `View` conformance lives in an extension below, and nothing in here
+    /// touches main-actor state, so this view can be created from any context.
     public init(theme: AnyZTronTheme? = nil) {
         self.injectedAppTheme = theme
-        // EnvironmentObject's own default init is @MainActor-isolated. Constructing
-        // a View value is always done on the main actor in practice (including
-        // SwiftUI's internal async-render thread, which the dynamic isolation check
-        // can't always prove statically) — assumeIsolated asserts that correctly via
-        // the executor-aware check instead of leaving an unresolved static warning.
-        self._themeProvider = MainActor.assumeIsolated {
-            EnvironmentObject<ZTronThemeProvider>()
-        }
     }
 
-}
-
-// `View` conformance lives in an extension so only `body` (the protocol
-// requirement) is MainActor-isolated — not the whole type, including `init`.
-// See README.md for why this matters under Swift 6's Dynamic Actor Isolation.
-// `theme` lives here too since it calls the MainActor-isolated
-// ZTronThemeProvider.getTheme().
-extension SheetBackground: View {
-    @MainActor
-    private var theme: AnyZTronTheme {
-        if let injectedAppTheme = self.injectedAppTheme {
-            return injectedAppTheme
-        } else {
-            return self.themeProvider.getTheme()
-        }
-    }
-
-    public var body: some View {
+    // Deliberately nonisolated (declared outside the `View` extension): built only from
+    // plain values, so the GeometryReader / ZStack closures carry no executor check.
+    // See README, "Swift 6 isolation".
+    private func layers(theme: AnyZTronTheme) -> some View {
         GeometryReader { geo in
             let size = geo.size
             let baseStart = colorScheme == .dark ? UnitPoint(x: 1.07, y: 1.61)
@@ -69,6 +48,21 @@ extension SheetBackground: View {
     }
 }
 
+// `View` conformance lives in an extension so that only `body` is main-actor isolated —
+// not `init`. `body` is where the environment's theme provider is read.
+extension SheetBackground: View {
+    public var body: some View {
+        if let injectedAppTheme {
+            layers(theme: injectedAppTheme)
+        } else {
+            ThemeReader { theme in
+                layers(theme: theme)
+            }
+        }
+    }
+}
+
+#if DEBUG
 #Preview {
     SheetBackground(theme: ZTronCommanderTheme().erasedToAnyTheme())
         .frame(width: 430, height: 774)
@@ -80,3 +74,4 @@ extension SheetBackground: View {
         .frame(width: 430, height: 338)
         .preferredColorScheme(.light)
 }
+#endif

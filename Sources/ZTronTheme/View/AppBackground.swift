@@ -2,51 +2,35 @@ import SwiftUI
 
 public struct AppBackground {
     @Environment(\.colorScheme) private var colorScheme
-    @EnvironmentObject private var themeProvider: ZTronThemeProvider
-    private var injectedAppTheme: AnyZTronTheme? = nil
+    private let injectedAppTheme: AnyZTronTheme?
 
     private let washCenter = UnitPoint(x: 0.82, y: 0.03)
     private let washEdge   = UnitPoint(x: 0.00, y: 1.00)
 
-    private var glowTopInset: CGFloat
+    private let glowTopInset: CGFloat
     @Binding private var glowIntensity: CGFloat
 
     private let glowRadiusX: CGFloat = 0.37
     private let glowRadiusY: CGFloat = 0.10
     private let glowOpacity: Double  = 0.10
 
+    /// Nonisolated: `View` conformance lives in an extension below, and nothing in here
+    /// touches main-actor state, so this view can be created from any context.
     public init(theme: AnyZTronTheme? = nil, glowTopInset: CGFloat = 67.0 / 920.0, glowIntensity: Binding<CGFloat> = .constant(0)) {
         self.injectedAppTheme = theme
         self.glowTopInset = glowTopInset
         self._glowIntensity = glowIntensity
-        // EnvironmentObject's own default init is @MainActor-isolated. Constructing
-        // a View value is always done on the main actor in practice (including
-        // SwiftUI's internal async-render thread, which the dynamic isolation check
-        // can't always prove statically) — assumeIsolated asserts that correctly via
-        // the executor-aware check instead of leaving an unresolved static warning.
-        self._themeProvider = MainActor.assumeIsolated {
-            EnvironmentObject<ZTronThemeProvider>()
-        }
     }
 
-}
+    // MARK: - Layers
+    //
+    // Deliberately nonisolated (declared outside the `View` extension). `body` resolves
+    // the theme on the main actor and passes it down as a plain value, so the
+    // GeometryReader / ZStack closures created here inherit *no* main-actor isolation and
+    // the compiler emits no executor check for them — whichever thread SwiftUI evaluates
+    // them on, they cannot trap. See README, "Swift 6 isolation".
 
-// `View` conformance lives in an extension so only `body` (the protocol
-// requirement) is MainActor-isolated — not the whole type, including `init`.
-// See README.md for why this matters under Swift 6's Dynamic Actor Isolation.
-// `theme` lives here too since it calls the MainActor-isolated
-// ZTronThemeProvider.getTheme().
-extension AppBackground: View {
-    @MainActor
-    private var theme: AnyZTronTheme {
-        if let injectedAppTheme = self.injectedAppTheme {
-            return injectedAppTheme
-        } else {
-            return self.themeProvider.getTheme()
-        }
-    }
-
-    public var body: some View {
+    private func layers(theme: AnyZTronTheme) -> some View {
         GeometryReader { geo in
             let size = geo.size
             ZStack {
@@ -79,14 +63,12 @@ extension AppBackground: View {
                     )
                 }
 
-                glow(in: size)
+                glow(theme: theme, in: size)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
         }
         .ignoresSafeArea()
     }
-
-    // MARK: - Layers
 
     /// Elliptical magenta glow aligned to the top edge of a bottom-anchored rect.
     /// `glowIntensity` scales the ellipse radii from 0 (invisible) to 1 (full Figma spec).
@@ -95,8 +77,7 @@ extension AppBackground: View {
     /// `appBackgroundVoid` wash over everything outside the ellipse. The light page has
     /// no such layer, so in light mode the ellipse fades to transparent and there is
     /// no wash — at intensity 0 nothing is drawn, matching Figma.
-    @MainActor
-    private func glow(in size: CGSize) -> some View {
+    private func glow(theme: AnyZTronTheme, in size: CGSize) -> some View {
         let intensity = max(0, min(1, glowIntensity))
         let height = max(size.height * (1 - glowTopInset), 0)
         let rx = size.width * glowRadiusX * intensity
@@ -129,7 +110,23 @@ extension AppBackground: View {
     }
 }
 
+// `View` conformance lives in an extension so that only `body` (the protocol
+// requirement) is main-actor isolated — not the whole type, and in particular not
+// `init`. `body` is the one place SwiftUI guarantees the main actor, so it is where the
+// environment's theme provider is read; everything else is built from plain values.
+extension AppBackground: View {
+    public var body: some View {
+        if let injectedAppTheme {
+            layers(theme: injectedAppTheme)
+        } else {
+            ThemeReader { theme in
+                layers(theme: theme)
+            }
+        }
+    }
+}
 
+#if DEBUG
 #Preview {
     AppBackground(theme: ZTronCommanderTheme().erasedToAnyTheme(), glowIntensity: .constant(1))
         .preferredColorScheme(.dark)
@@ -139,3 +136,4 @@ extension AppBackground: View {
     AppBackground(theme: ZTronCommanderTheme().erasedToAnyTheme())
         .preferredColorScheme(.light)
 }
+#endif
