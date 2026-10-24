@@ -154,10 +154,12 @@ The current design removes both kinds of check from the module entirely:
 
 `Scripts/check-no-executor-checks.sh` compiles the module to SIL with `DEBUG` undefined
 (so the `#if DEBUG` previews are excluded), at both `-Onone` and `-O`, and fails if any of
-these checks appears in any function body, compiler-generated thunks included. Nothing
-runs it automatically; run it after touching any `View` in this package, or wire it into
-CI ahead of `xcodebuild test`. The unit tests cannot catch this class: in the test host
-SwiftUI evaluates `body` on the main thread, so a reintroduced check passes there.
+these checks appears in any function body, compiler-generated thunks included. The GitHub
+Actions workflow `.github/workflows/ci.yml` (job "Isolation check and tests") runs it on
+every push and pull request as its own step ahead of `xcodebuild test`, so a reintroduced
+check fails CI with the demangled names of the offending functions; also run it locally
+after touching any `View` in this package. The unit tests cannot catch this class: in the
+test host SwiftUI evaluates `body` on the main thread, so a reintroduced check passes there.
 
 Two compiler facts this relies on, verified against Swift 6.4 / the iOS 27 SDK: members
 declared inside `extension X: View` other than `body` are *not* main-actor isolated; and

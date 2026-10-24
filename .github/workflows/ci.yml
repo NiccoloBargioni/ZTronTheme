@@ -1,0 +1,102 @@
+# Continuous integration for ZTronTheme.
+#
+# The package is iOS-only (it links UIKit), so `swift build` / `swift test` cannot be used:
+# everything goes through xcodebuild against an iOS simulator. Two things are enforced on
+# every push and pull request, in this order (see README, "Internal note: Swift 6 isolation"):
+#
+#   1. Scripts/check-no-executor-checks.sh: the module's SIL contains no main-actor executor
+#      checks. A reintroduced check fails that step with the demangled offending functions.
+#   2. xcodebuild test on an iOS 18 or newer simulator. The off-main-actor tests in
+#      Tests/ZTronThemeTests/IsolationTests.swift only trap (and therefore only fail) on
+#      iOS 18+ runtimes; on iOS 17 the same failure merely logs a warning.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Isolation check and tests
+    # macOS 26 image: several Xcode 26.x releases and the iOS 26 simulator runtime.
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Select the newest stable Xcode on the runner
+        run: |
+          # The image ships several releases; the newest non-beta one has the newest SDK.
+          # Keeps the image default if there is no versioned install to choose from.
+          xcode=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -vi beta | sort -V | tail -n 1 || true)
+          if [ -n "$xcode" ]; then
+            sudo xcode-select -s "$xcode"
+          fi
+          xcodebuild -version
+          xcrun swift --version
+
+      - name: Check for main-actor executor checks in the module
+        # Compiles the module to SIL (-Onone and -O, DEBUG undefined) and fails if any
+        # function body calls a runtime executor check, printing the demangled offenders.
+        run: sh Scripts/check-no-executor-checks.sh
+
+      - name: Select an iPhone simulator on iOS 18 or newer
+        id: simulator
+        run: |
+          # Pick an iPhone on the newest installed iOS runtime, and refuse anything older
+          # than iOS 18: the off-main-actor isolation tests only trap on iOS 18 and newer.
+          read -r major minor name <<< "$(xcrun simctl list devices available -j | jq -r '
+            .devices | to_entries
+            | map(select(.key | test("\\.iOS-[0-9]+-[0-9]+")))
+            | map({
+                major: (.key | capture("iOS-(?<v>[0-9]+)-") | .v | tonumber),
+                minor: (.key | capture("iOS-[0-9]+-(?<v>[0-9]+)") | .v | tonumber),
+                name: ([.value[] | select(.name | startswith("iPhone")) | .name] | first)
+              })
+            | map(select(.name != null))
+            | sort_by([.major, .minor]) | last // empty
+            | "\(.major) \(.minor) \(.name)"
+          ')"
+          if [ -z "${name:-}" ]; then
+            echo "::error::No iPhone simulator found on any iOS runtime"
+            exit 1
+          fi
+          if [ "$major" -lt 18 ]; then
+            echo "::error::Newest iOS simulator runtime is $major.$minor; the isolation tests need iOS 18 or newer"
+            exit 1
+          fi
+          echo "Using '$name' on iOS $major.$minor"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Run the unit tests
+        env:
+          SIMULATOR_NAME: ${{ steps.simulator.outputs.name }}
+        run: |
+          xcodebuild test \
+            -scheme ZTronTheme \
+            -destination "platform=iOS Simulator,name=$SIMULATOR_NAME,OS=latest" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload the test result bundle
+        # A trapped isolation test kills the test runner; its crash log is in the bundle.
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: TestResults.xcresult
+          path: TestResults.xcresult
+          if-no-files-found: ignore
